@@ -1,0 +1,180 @@
+# Product Requirements Document (PRD)
+
+## Project: **Nudge - A To-Do & Reminder App**
+
+Target Platform: **Android (OnePlus Nord 5, AMOLED with AOD support)**
+Language: **Kotlin**
+UI Framework: **Jetpack Compose (Material 3)**
+Min SDK: **23 (Android 6.0, Marshmallow)**
+Build System: **Gradle with Kotlin DSL (build.gradle.kts)**
+
+---
+
+## Goal
+
+Create an Android app that allows users to manage daily tasks and reminders. Tasks should:
+
+* Persist in local storage (Room DB).
+* Trigger notifications at scheduled times (WorkManager/AlarmManager).
+* Provide a **persistent foreground notification** showing today’s tasks (so they appear on the lockscreen/AOD).
+
+This ensures tasks and reminders are always visible without unlocking the phone.
+
+---
+
+## Core Features
+
+1. **Task Management**
+
+   * Add/Edit/Delete tasks.
+   * Fields: `id`, `title`, `description`, `reminderTime`, `isCompleted`.
+   * Local persistence via **Room DB**.
+
+2. **Reminders**
+
+   * Schedule notifications using **WorkManager**.
+   * Display reminder notification at the correct time.
+   * Allow action buttons: *Mark as Done*, *Snooze*.
+
+3. **Persistent Notification**
+
+   * Foreground service to display ongoing notification with today’s tasks.
+   * Visible on lockscreen and AOD.
+
+4. **UI (Jetpack Compose)**
+
+   * **Task List Screen** (all tasks for today).
+   * **Add/Edit Task Screen** (with date/time picker).
+   * **Mark Complete** with check icon.
+   * Material 3 theming.
+
+5. **Theming**
+
+   * Dark/Light mode support.
+   * Material 3 adaptive colors.
+
+---
+
+## Architecture
+
+* Pattern: **MVVM**
+* Layers:
+
+  * **Data Layer**: Room (DAO, Database, Entities)
+  * **Repository Layer**: TaskRepository
+  * **Domain Layer**: ViewModel (TaskViewModel)
+  * **UI Layer**: Compose screens
+
+---
+
+## File/Module Breakdown
+
+### 1. **Data Layer**
+
+* `data/Task.kt` → Entity
+* `data/TaskDao.kt` → DAO (insert, update, delete, getAll)
+* `data/TaskDatabase.kt` → Room database
+
+### 2. **Repository Layer**
+
+* `repository/TaskRepository.kt` → Bridges DAO and ViewModel
+
+### 3. **Domain Layer**
+
+* `viewmodel/TaskViewModel.kt` → Holds state, exposes Flow of tasks
+
+### 4. **UI Layer (Compose)**
+
+* `ui/TaskListScreen.kt` → Shows list of today’s tasks
+* `ui/AddTaskScreen.kt` → Add/Edit task form
+* `ui/components/TaskItem.kt` → Reusable composable for a single task
+* `ui/theme/Color.kt`, `Theme.kt`, `Type.kt` → Theming
+
+### 5. **Notifications**
+
+* `notifications/ReminderWorker.kt` → WorkManager for scheduled reminders
+* `notifications/NotificationUtils.kt` → Helper for creating notifications
+* `notifications/ForegroundService.kt` → Persistent notification service
+
+### 6. **Main Entry**
+
+* `MainActivity.kt` → Hosts navigation (TaskList → AddTask)
+* `NavGraph.kt` → Defines Compose navigation routes
+
+---
+
+## Dependencies (Gradle)
+
+```kotlin
+dependencies {
+    // Core
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.activity:activity-compose:1.8.0")
+
+    // Compose
+    implementation("androidx.compose.ui:ui:1.5.3")
+    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.5.3")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.5.3")
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.3")
+
+    // Room (Database)
+    implementation("androidx.room:room-runtime:2.6.0")
+    kapt("androidx.room:room-compiler:2.6.0")
+    implementation("androidx.room:room-ktx:2.6.0")
+
+    // WorkManager (Background tasks)
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+}
+```
+
+---
+
+## Navigation Flow
+
+1. **MainActivity → TaskListScreen** (default)
+
+   * Shows today’s tasks.
+   * FAB (+) → navigate to AddTaskScreen.
+
+2. **AddTaskScreen**
+
+   * Enter title, description, reminder time.
+   * Save → inserts into DB, schedules WorkManager.
+
+3. **Foreground Notification**
+
+   * Shows ongoing summary: *“2 Tasks Pending Today”* with list preview.
+
+4. **Reminder Notification (Scheduled)**
+
+   * Triggers at `reminderTime`.
+   * Options: Mark Done / Snooze.
+
+---
+
+## Edge Cases / Considerations
+
+* Battery optimizations: ensure WorkManager is reliable on OxygenOS (OnePlus).
+* AOD support: relies on notifications being visible on lockscreen.
+* Multiple reminders at same time: group notifications.
+* Snooze: reschedule WorkManager job + update DB.
+
+---
+
+## Deliverables for Claude Code
+
+* Generate the **full codebase** with the file/module breakdown above.
+* Implement Room DB, WorkManager, Foreground Service.
+* Provide Compose UI screens (Task list, Add/Edit, components).
+* Setup Gradle with dependencies listed.
+* Ensure navigation works between screens.
+
+---
+
